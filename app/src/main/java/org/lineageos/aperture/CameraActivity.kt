@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: The LineageOS Project
+ * SPDX-FileCopyrightText: 2022-2026 The LineageOS Project
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -120,6 +120,7 @@ import org.lineageos.aperture.models.TimerMode
 import org.lineageos.aperture.models.VideoDynamicRange
 import org.lineageos.aperture.models.VideoMirrorMode
 import org.lineageos.aperture.models.VideoStabilizationMode
+import org.lineageos.aperture.repositories.OverlaysRepository
 import org.lineageos.aperture.ui.dialogs.LocationPermissionsDialog
 import org.lineageos.aperture.ui.dialogs.QrBottomSheetDialog
 import org.lineageos.aperture.ui.views.CameraModeSelectorLayout
@@ -187,6 +188,9 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
 
     // System services
     private val keyguardManager by lazy { getSystemService(KeyguardManager::class.java) }
+
+    // Repositories
+    private val overlaysRepository by lazy { OverlaysRepository(this) }
 
     /**
      * The currently shown URI.
@@ -1631,7 +1635,8 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
                     when (cameraConfiguration) {
                         is CameraConfiguration.Video -> cameraConfiguration.videoFrameRate
                         else -> null
-                    }
+                    },
+                    overlaysRepository.vendorFpsParams
                 )
                 .setVideoStabilizationMode(
                     when (cameraConfiguration) {

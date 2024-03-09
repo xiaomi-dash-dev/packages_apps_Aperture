@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: The LineageOS Project
+ * SPDX-FileCopyrightText: 2024-2026 The LineageOS Project
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -11,6 +11,15 @@ import org.lineageos.aperture.R
 import org.lineageos.aperture.ext.getOrCreate
 import org.lineageos.aperture.models.FrameRate
 import kotlin.math.absoluteValue
+
+/**
+ * Vendor parameter.
+ */
+data class VendorParameter(
+    val keyName: String,
+    val type: String,
+    val value: String
+)
 
 /**
  * Overlays repository.
@@ -130,6 +139,11 @@ class OverlaysRepository(private val context: Context) {
      */
     val enableHighResolution = getBoolean(R.bool.config_enableHighResolution)
 
+    /**
+    * @see R.array.config_vendorFpsSessionParams
+    */
+    val vendorFpsParams = parseVendorParams(R.array.config_vendorFpsSessionParams)
+
     private fun getBoolean(id: Int) = rroResources.firstNotNullOfOrNull {
         runCatching {
             it.getBoolean(id)
@@ -141,4 +155,26 @@ class OverlaysRepository(private val context: Context) {
             it.getStringArray(id)
         }.getOrNull()
     } ?: context.resources.getStringArray(id)
+
+    private fun parseVendorParams(arrayResId: Int): Map<String, List<VendorParameter>> {
+        return buildMap<String, MutableList<VendorParameter>> {
+            getStringArray(arrayResId).let { array ->
+                // Require exact multiples of 4: (Trigger, Key, Type, Value)
+                if (array.size % 4 != 0) {
+                    return@buildMap
+                }
+
+                for (i in array.indices step 4) {
+                    val trigger = array[i]
+                    val keyName = array[i + 1]
+                    val keyType = array[i + 2]
+                    val valueStr = array[i + 3]
+
+                    getOrPut(trigger) { mutableListOf() }.add(
+                        VendorParameter(keyName, keyType, valueStr)
+                    )
+                }
+            }
+        }
+    }
 }

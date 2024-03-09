@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: The LineageOS Project
+ * SPDX-FileCopyrightText: 2022-2026 The LineageOS Project
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -18,6 +18,7 @@ import org.lineageos.aperture.models.HotPixelMode
 import org.lineageos.aperture.models.NoiseReductionMode
 import org.lineageos.aperture.models.ShadingMode
 import org.lineageos.aperture.models.VideoStabilizationMode
+import org.lineageos.aperture.repositories.OverlaysRepository
 
 @androidx.camera.camera2.interop.ExperimentalCamera2Interop
 fun <ValueT> CaptureRequestOptions.Builder.setOrClearCaptureRequestOption(
@@ -28,12 +29,30 @@ fun <ValueT> CaptureRequestOptions.Builder.setOrClearCaptureRequestOption(
 } ?: clearCaptureRequestOption(key)
 
 @androidx.camera.camera2.interop.ExperimentalCamera2Interop
+fun CaptureRequestOptions.Builder.applyVendorParameters(
+    parameters: List<VendorParameter>?
+) {
+    parameters?.forEach { param ->
+        when (param.type) {
+            "int" -> setOrClearCaptureRequestOption(CaptureRequest.Key(param.keyName, Int::class.java), param.value.toIntOrNull())
+            "byte" -> setOrClearCaptureRequestOption(CaptureRequest.Key(param.keyName, Byte::class.java), param.value.toByteOrNull())
+            "float" -> setOrClearCaptureRequestOption(CaptureRequest.Key(param.keyName, Float::class.java), param.value.toFloatOrNull())
+            "string" -> setOrClearCaptureRequestOption(CaptureRequest.Key(param.keyName, String::class.java), param.value)
+        }
+    }
+}
+
+@androidx.camera.camera2.interop.ExperimentalCamera2Interop
 fun CaptureRequestOptions.Builder.setFrameRate(
-    frameRate: FrameRate?
-) = setOrClearCaptureRequestOption(
-    CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE,
-    frameRate?.range?.toRange(),
-)
+    frameRate: FrameRate?,
+    vendorFpsParams: Map<String, List<VendorParameter>>
+) = apply {
+    setOrClearCaptureRequestOption(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, frameRate?.range?.toRange())
+
+    frameRate?.let {
+        applyVendorParameters(vendorFpsParams[it.value.toString()])
+    }
+}
 
 @androidx.camera.camera2.interop.ExperimentalCamera2Interop
 fun CaptureRequestOptions.Builder.setVideoStabilizationMode(
